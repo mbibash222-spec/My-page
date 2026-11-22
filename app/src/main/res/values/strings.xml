@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Sanu Shop</string>
+    <string name="app_tagline">Shoes &amp; Slippers · Live Inventory &amp; Express Fulfillment</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="sign_in_subtitle">Access unified shoes &amp; slippers storefront, real-time order tracking, QR warehouse tools, and manager analytics.</string>
+    <string name="nav_shop">Shop</string>
+    <string name="nav_inventory">Inventory</string>
+    <string name="nav_scan">Scan</string>
+    <string name="nav_orders">Track</string>
+    <string name="nav_manager">Manager</string>
+    <string name="notification_channel_id">sanu_shop_updates</string>
+    <string name="notification_channel_name">Sanu Shop Orders &amp; Inventory</string>
+    <string name="notification_channel_desc">Real-time order tracking updates, payment receipts, and low-stock warehouse alerts.</string>
+</resources>

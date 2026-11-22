@@ -1,0 +1,227 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.email is string && data.email.size() <= 120 &&
+             data.agentMode is bool &&
+             data.agentBadgeId is string && data.agentBadgeId.size() <= 32 &&
+             data.storeBranch is string && data.storeBranch.size() >= 1 && data.storeBranch.size() <= 60 &&
+             data.seeded is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidProduct(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.sku is string && data.sku.size() >= 2 && data.sku.size() <= 32 &&
+             data.name is string && data.name.size() >= 2 && data.name.size() <= 80 &&
+             data.brand is string && data.brand.size() >= 2 && data.brand.size() <= 40 &&
+             data.category in ['SHOES', 'SLIPPERS'] &&
+             data.subcategory is string && data.subcategory.size() >= 2 && data.subcategory.size() <= 40 &&
+             data.description is string && data.description.size() <= 400 &&
+             data.price is number && data.price > 0 && data.price <= 10000 &&
+             data.costPrice is number && data.costPrice >= 0 && data.costPrice <= 10000 &&
+             data.stockCount is int && data.stockCount >= 0 && data.stockCount <= 100000 &&
+             data.lowStockThreshold is int && data.lowStockThreshold >= 1 && data.lowStockThreshold <= 1000 &&
+             data.warehouseBin is string && data.warehouseBin.size() >= 2 && data.warehouseBin.size() <= 40 &&
+             data.qrPayload is string && data.qrPayload.size() >= 4 && data.qrPayload.size() <= 120 &&
+             data.imageKey is string && data.imageKey.size() >= 1 && data.imageKey.size() <= 40 &&
+             data.sizes is list && data.sizes.size() >= 1 && data.sizes.size() <= 15 && data.sizes[0] is string &&
+             data.colorway is string && data.colorway.size() >= 1 && data.colorway.size() <= 40 &&
+             data.rating is number && data.rating >= 0 && data.rating <= 5 &&
+             data.soldCount is int && data.soldCount >= 0 && data.soldCount <= 1000000 &&
+             data.featured is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidOrder(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.orderNumber is string && data.orderNumber.size() >= 4 && data.orderNumber.size() <= 32 &&
+             data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 80 &&
+             data.shippingAddress is string && data.shippingAddress.size() >= 4 && data.shippingAddress.size() <= 200 &&
+             data.itemsSummary is string && data.itemsSummary.size() >= 1 && data.itemsSummary.size() <= 300 &&
+             data.primaryCategory in ['SHOES', 'SLIPPERS', 'MIXED'] &&
+             data.totalUnits is int && data.totalUnits >= 1 && data.totalUnits <= 1000 &&
+             data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 500000 &&
+             data.tax is number && data.tax >= 0 && data.tax <= 100000 &&
+             data.totalAmount is number && data.totalAmount > 0 && data.totalAmount <= 600000 &&
+             data.estimatedProfit is number && data.estimatedProfit >= 0 && data.estimatedProfit <= 500000 &&
+             data.paymentMethod in ['CARD', 'UPI_WALLET', 'COD'] &&
+             data.paymentReference is string && data.paymentReference.size() >= 4 && data.paymentReference.size() <= 64 &&
+             data.paymentStatus in ['PAID', 'AUTHORIZED', 'COD_PENDING'] &&
+             data.trackingStatus in ['PLACED', 'PACKED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'] &&
+             data.trackingNote is string && data.trackingNote.size() <= 200 &&
+             data.assignedAgent is string && data.assignedAgent.size() <= 64 &&
+             data.etaText is string && data.etaText.size() >= 1 && data.etaText.size() <= 60 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidNotification(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 300 &&
+             data.notifType in ['ORDER', 'INVENTORY', 'PAYMENT', 'PROMO'] &&
+             data.readFlag is bool &&
+             data.referenceId is string && data.referenceId.size() <= 64 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'email', 'agentMode',
+                         'agentBadgeId', 'storeBranch', 'seeded', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'email', 'agentMode',
+                         'agentBadgeId', 'storeBranch', 'seeded', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'email', 'agentMode', 'agentBadgeId', 'storeBranch', 'seeded', 'updatedAt'
+                       ]);
+
+      allow delete: if false;
+
+      match /products/{productId} {
+        allow get: if isOwner(userId) && isValidId(productId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(productId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'sku', 'name', 'brand', 'category', 'subcategory',
+                           'description', 'price', 'costPrice', 'stockCount', 'lowStockThreshold',
+                           'warehouseBin', 'qrPayload', 'imageKey', 'sizes', 'colorway',
+                           'rating', 'soldCount', 'featured', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'sku', 'name', 'brand', 'category', 'subcategory',
+                           'description', 'price', 'costPrice', 'stockCount', 'lowStockThreshold',
+                           'warehouseBin', 'qrPayload', 'imageKey', 'sizes', 'colorway',
+                           'rating', 'soldCount', 'featured', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidProduct(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(productId) &&
+                         isValidProduct(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['stockCount', 'soldCount', 'updatedAt']) ||
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'sku', 'name', 'brand', 'category', 'subcategory', 'description',
+                             'price', 'costPrice', 'stockCount', 'lowStockThreshold', 'warehouseBin',
+                             'qrPayload', 'imageKey', 'sizes', 'colorway', 'rating', 'soldCount',
+                             'featured', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(productId);
+      }
+
+      match /orders/{orderId} {
+        allow get: if isOwner(userId) && isValidId(orderId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(orderId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'orderNumber', 'customerName', 'shippingAddress', 'itemsSummary',
+                           'primaryCategory', 'totalUnits', 'subtotal', 'tax', 'totalAmount',
+                           'estimatedProfit', 'paymentMethod', 'paymentReference', 'paymentStatus',
+                           'trackingStatus', 'trackingNote', 'assignedAgent', 'etaText',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'orderNumber', 'customerName', 'shippingAddress', 'itemsSummary',
+                           'primaryCategory', 'totalUnits', 'subtotal', 'tax', 'totalAmount',
+                           'estimatedProfit', 'paymentMethod', 'paymentReference', 'paymentStatus',
+                           'trackingStatus', 'trackingNote', 'assignedAgent', 'etaText',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidOrder(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(orderId) &&
+                         isValidOrder(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         existing().trackingStatus != 'DELIVERED' &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'trackingStatus', 'trackingNote', 'assignedAgent', 'etaText', 'paymentStatus', 'updatedAt'
+                         ]);
+
+        allow delete: if false;
+      }
+
+      match /notifications/{notificationId} {
+        allow get: if isOwner(userId) && isValidId(notificationId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(notificationId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'message', 'notifType', 'readFlag',
+                           'referenceId', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'message', 'notifType', 'readFlag',
+                           'referenceId', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidNotification(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(notificationId) &&
+                         isValidNotification(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['readFlag', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(notificationId);
+      }
+    }
+  }
+}

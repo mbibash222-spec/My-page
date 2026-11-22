@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "ShopUserProfile": {
+      "title": "ShopUserProfile",
+      "description": "Authenticated user and optional store agent session profile for Sanu Shop.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the signed-in user." },
+        "displayName": { "type": "string", "description": "Display name of the customer or agent." },
+        "email": { "type": "string", "description": "Verified Google account email." },
+        "agentMode": { "type": "boolean", "description": "True when Store Agent / Manager mode is active." },
+        "agentBadgeId": { "type": "string", "description": "Verified store agent badge identifier." },
+        "storeBranch": { "type": "string", "description": "Active Sanu Shop store or warehouse branch." },
+        "seeded": { "type": "boolean", "description": "Indicates initial footwear catalog has been seeded." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on last update." }
+      },
+      "required": ["userId", "displayName", "email", "agentMode", "agentBadgeId", "storeBranch", "seeded", "createdAt", "updatedAt"]
+    },
+    "FootwearProduct": {
+      "title": "FootwearProduct",
+      "description": "A shoe or slipper product SKU with warehouse bin and QR lookup metadata.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "sku": { "type": "string" },
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "category": { "type": "string", "enum": ["SHOES", "SLIPPERS"] },
+        "subcategory": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "costPrice": { "type": "number" },
+        "stockCount": { "type": "integer" },
+        "lowStockThreshold": { "type": "integer" },
+        "warehouseBin": { "type": "string" },
+        "qrPayload": { "type": "string" },
+        "imageKey": { "type": "string" },
+        "sizes": { "type": "string", "description": "Array of available sizes stored as Firestore list." },
+        "colorway": { "type": "string" },
+        "rating": { "type": "number" },
+        "soldCount": { "type": "integer" },
+        "featured": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "sku", "name", "brand", "category", "subcategory", "description", "price", "costPrice", "stockCount", "lowStockThreshold", "warehouseBin", "qrPayload", "imageKey", "sizes", "colorway", "rating", "soldCount", "featured", "createdAt", "updatedAt"]
+    },
+    "ShopOrder": {
+      "title": "ShopOrder",
+      "description": "Customer footwear order with secure payment reference and real-time tracking status.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "customerName": { "type": "string" },
+        "shippingAddress": { "type": "string" },
+        "itemsSummary": { "type": "string" },
+        "primaryCategory": { "type": "string", "enum": ["SHOES", "SLIPPERS", "MIXED"] },
+        "totalUnits": { "type": "integer" },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "estimatedProfit": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["CARD", "UPI_WALLET", "COD"] },
+        "paymentReference": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["PAID", "AUTHORIZED", "COD_PENDING"] },
+        "trackingStatus": { "type": "string", "enum": ["PLACED", "PACKED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"] },
+        "trackingNote": { "type": "string" },
+        "assignedAgent": { "type": "string" },
+        "etaText": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "orderNumber", "customerName", "shippingAddress", "itemsSummary", "primaryCategory", "totalUnits", "subtotal", "tax", "totalAmount", "estimatedProfit", "paymentMethod", "paymentReference", "paymentStatus", "trackingStatus", "trackingNote", "assignedAgent", "etaText", "createdAt", "updatedAt"]
+    },
+    "ShopNotification": {
+      "title": "ShopNotification",
+      "description": "Order tracking, payment confirmation, and warehouse low-stock notification entry.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "notifType": { "type": "string", "enum": ["ORDER", "INVENTORY", "PAYMENT", "PROMO"] },
+        "readFlag": { "type": "boolean" },
+        "referenceId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "notifType", "readFlag", "referenceId", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/ShopUserProfile" },
+      "description": "User and active agent session profile."
+    },
+    "/users/{userId}/products/{productId}": {
+      "schema": { "$ref": "#/entities/FootwearProduct" },
+      "description": "Shoes and slippers inventory SKUs with warehouse bin and QR code metadata."
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/ShopOrder" },
+      "description": "Orders with payment gateway reference and real-time tracking state."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/ShopNotification" },
+      "description": "Customer and warehouse push notification log."
+    }
+  }
+}

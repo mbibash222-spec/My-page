@@ -1,0 +1,6 @@
+{
+  "name": "Sanu Shop",
+  "description": "Shoes and slippers storefront with integrated inventory, QR lookup, secure checkout, real-time order tracking, agent login, and sales analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
